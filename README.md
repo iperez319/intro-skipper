@@ -1,7 +1,7 @@
 # Intro Skipper (beta)
 <div align="center">
     <p>
-        <img alt="Plugin Banner" src="https://raw.githubusercontent.com/jumoog/intro-skipper/master/images/logo.png" />
+        <img alt="Plugin Banner" src="https://raw.githubusercontent.com/jumoog/intro-skipper/10.8/images/logo.png" />
     </p>
     <p>
         Analyzes the audio of television episodes to detect and skip over intros.
