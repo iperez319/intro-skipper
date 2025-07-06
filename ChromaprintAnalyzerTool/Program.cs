@@ -85,7 +85,7 @@ foreach (var episodeId in newEpisodes)
 {
     var idx = analyzedEpisodes.FindIndex(e => e.EpisodeId == episodeId);
     var episode = analyzedEpisodes[idx];
-    // SetIntroOnDb(episode, getLinkId(episode.Path));
+    SetIntroOnDb(episode, getLinkId(episode.Path));
 }
 
 Console.WriteLine("Analysis complete.");
