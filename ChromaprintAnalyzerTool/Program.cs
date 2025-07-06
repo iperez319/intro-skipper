@@ -78,8 +78,9 @@ foreach (var file in Directory.GetFiles(directoryPath))
 
 seasonData.Save(seasonDataFilePath);
 
+var startTime = DateTime.Now;
 var analyzedEpisodes = await analyzer.AnalyzeMediaFiles(analysisQueue, AnalysisMode.Introduction, CancellationToken.None);
-
+var endTime = DateTime.Now;
 foreach (var episodeId in newEpisodes)
 {
     var idx = analyzedEpisodes.FindIndex(e => e.EpisodeId == episodeId);
@@ -88,6 +89,7 @@ foreach (var episodeId in newEpisodes)
 }
 
 Console.WriteLine("Analysis complete.");
+Console.WriteLine($"Time taken: {endTime - startTime}");
 
 
 static double GetVideoDurationInSeconds(string videoPath)

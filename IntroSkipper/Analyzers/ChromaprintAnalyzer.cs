@@ -31,6 +31,7 @@ public class ChromaprintAnalyzer(ILogger<ChromaprintAnalyzer> logger) : IMediaFi
     private AnalysisMode _analysisMode;
 
     /// <inheritdoc />
+    #pragma warning disable CS1998
     public async Task<IReadOnlyList<QueuedEpisode>> AnalyzeMediaFiles(
         IReadOnlyList<QueuedEpisode> analysisQueue,
         AnalysisMode mode,
@@ -108,7 +109,7 @@ public class ChromaprintAnalyzer(ILogger<ChromaprintAnalyzer> logger) : IMediaFi
                     fingerprintCache[remainingEpisode.EpisodeId]);
 
                 var maxDuration = _analysisMode == AnalysisMode.Introduction
-                    ? Plugin.Instance!.Configuration.MaximumIntroDuration
+                    ? _config.MaximumIntroDuration
                     : (int)(remainingEpisode.Duration - remainingEpisode.CreditsFingerprintStart - 1); // dont allow perfect matches to avoid false positives from duplicates
 
                 // Ignore this comparison result if:
@@ -168,7 +169,10 @@ public class ChromaprintAnalyzer(ILogger<ChromaprintAnalyzer> logger) : IMediaFi
             {
                 var adjustedIntro = timeAdjustmentHelper.AdjustIntroTimes(currentEpisode, intro);
                 currentEpisode.SetAnalyzed(mode, EpisodeState.Analyzed);
-                await Plugin.Instance!.UpdateTimestampAsync(adjustedIntro, mode).ConfigureAwait(false);
+                currentEpisode.IntroStart = Convert.ToInt32(intro.Start);
+                currentEpisode.IntroEnd = Convert.ToInt32(intro.End);
+                _logger.LogInformation("{Episode} has an intro at {Start} to {End}", currentEpisode.Path, intro.Start, intro.End);
+                // await Plugin.Instance!.UpdateTimestampAsync(adjustedIntro, mode).ConfigureAwait(false);
             }
         }
 

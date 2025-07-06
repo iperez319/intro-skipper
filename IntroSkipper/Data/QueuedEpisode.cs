@@ -84,6 +84,16 @@ public class QueuedEpisode
     public double Duration { get; set; }
 
     /// <summary>
+    /// Gets or sets the timestamp (in seconds) when the introduction starts.
+    /// </summary>
+    public int IntroStart { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp (in seconds) when the introduction ends.
+    /// </summary>
+    public int IntroEnd { get; set; }
+
+    /// <summary>
     /// Sets a value indicating whether this media has been already analyzed.
     /// </summary>
     /// <param name="mode">Analysis mode.</param>

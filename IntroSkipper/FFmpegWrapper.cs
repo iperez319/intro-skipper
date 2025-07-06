@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using IntroSkipper.Configuration;
 using IntroSkipper.Data;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,10 @@ namespace IntroSkipper;
 /// </summary>
 public static partial class FFmpegWrapper
 {
+    private static readonly string FingerprintCachePath = Environment.GetEnvironmentVariable("FINGERPRINT_CACHE")!;
+
+    private static readonly PluginConfiguration _config = new PluginConfiguration();
+
     /// <summary>
     /// Used with FFmpeg's silencedetect filter to extract the start and end times of silence.
     /// </summary>
@@ -154,7 +159,7 @@ public static partial class FFmpegWrapper
             range.Start,
             episode.Path,
             range.End - range.Start,
-            Plugin.Instance?.Configuration.SilenceDetectionMaximumNoise ?? -50);
+            -50);
 
         // Cache the output of this command to "GUID-intro-silence-v2"
         var cacheKey = string.Format(
@@ -422,7 +427,7 @@ public static partial class FFmpegWrapper
         bool stderr = false,
         int timeout = 60 * 1000)
     {
-        var ffmpegPath = Plugin.Instance?.FFmpegPath ?? "ffmpeg";
+        var ffmpegPath = "ffmpeg";
 
         // The silencedetect and blackframe filters output data at the info log level.
         var useInfoLevel = args.Contains("silencedetect", StringComparison.OrdinalIgnoreCase) ||
@@ -431,15 +436,13 @@ public static partial class FFmpegWrapper
 
         var logLevel = useInfoLevel ? "info" : "warning";
 
-        var cacheOutput =
-            (Plugin.Instance?.Configuration.CacheFingerprints ?? false) &&
-            !string.IsNullOrEmpty(cacheFilename);
+        var cacheOutput = !string.IsNullOrEmpty(cacheFilename);
 
         // If caching is enabled, try to load the output of this command from the cached file.
         if (cacheOutput)
         {
             // Calculate the absolute path to the cached file.
-            cacheFilename = Path.Join(Plugin.Instance!.FingerprintCachePath, cacheFilename);
+            cacheFilename = Path.Join(FingerprintCachePath, cacheFilename);
 
             // If the cached file exists, return whatever it holds.
             if (File.Exists(cacheFilename))
@@ -457,7 +460,7 @@ public static partial class FFmpegWrapper
             CultureInfo.InvariantCulture,
             "-hide_banner -loglevel {0} -threads {1} ",
             logLevel,
-            Plugin.Instance?.Configuration.ProcessThreads ?? 0);
+            0);
 
         var info = new ProcessStartInfo(ffmpegPath, args.Insert(0, prependArgument))
         {
@@ -476,7 +479,7 @@ public static partial class FFmpegWrapper
 
         try
         {
-            ffmpeg.PriorityClass = Plugin.Instance?.Configuration.ProcessPriority ?? ProcessPriorityClass.BelowNormal;
+            ffmpeg.PriorityClass = _config.ProcessPriority;
         }
         catch (Exception e)
         {
@@ -576,7 +579,7 @@ public static partial class FFmpegWrapper
         fingerprint = [];
 
         // If fingerprint caching isn't enabled, don't try to load anything.
-        if (!(Plugin.Instance?.Configuration.CacheFingerprints ?? false))
+        if (!_config.CacheFingerprints)
         {
             return false;
         }
@@ -641,7 +644,7 @@ public static partial class FFmpegWrapper
         List<uint> fingerprint)
     {
         // Bail out if caching isn't enabled.
-        if (!(Plugin.Instance?.Configuration.CacheFingerprints ?? false))
+        if (!_config.CacheFingerprints)
         {
             return;
         }
@@ -667,7 +670,7 @@ public static partial class FFmpegWrapper
     public static void DeleteEpisodeCache(Guid id)
     {
         var cachePath = Path.Join(
-            Plugin.Instance!.FingerprintCachePath,
+            FingerprintCachePath,
             id.ToString("N"));
 
         // File.Delete(cachePath);
@@ -675,7 +678,7 @@ public static partial class FFmpegWrapper
         // File.Delete(cachePath + "-credits");
 
         var filePattern = Path.GetFileName(cachePath) + "*";
-        foreach (var filePath in Directory.EnumerateFiles(Plugin.Instance!.FingerprintCachePath, filePattern))
+        foreach (var filePath in Directory.EnumerateFiles(FingerprintCachePath, filePattern))
         {
             Logger?.LogDebug("DeleteEpisodeCache {FilePath}", filePath);
             File.Delete(filePath);
@@ -688,7 +691,7 @@ public static partial class FFmpegWrapper
     /// <param name="mode">Analysis mode.</param>
     public static void DeleteCacheFiles(AnalysisMode mode)
     {
-        foreach (var filePath in Directory.EnumerateFiles(Plugin.Instance!.FingerprintCachePath))
+        foreach (var filePath in Directory.EnumerateFiles(FingerprintCachePath))
         {
             var shouldDelete = (mode == AnalysisMode.Introduction)
                     ? !filePath.Contains("credit", StringComparison.OrdinalIgnoreCase)
@@ -713,7 +716,7 @@ public static partial class FFmpegWrapper
     public static string GetFingerprintCachePath(QueuedEpisode episode, AnalysisMode mode)
     {
         var basePath = Path.Join(
-            Plugin.Instance!.FingerprintCachePath,
+            FingerprintCachePath,
             episode.EpisodeId.ToString("N"));
 
         if (mode == AnalysisMode.Introduction)
